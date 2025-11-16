@@ -1,0 +1,148 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+//
+// --- ENUMS ---
+//
+//
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+}
+
+enum ProfileStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserRole {
+  USER
+  CAREGIVER
+  ADMIN
+}
+
+//
+// --- MODELS ---
+//
+
+model User {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  supabaseId String    @unique
+  role       UserRole  @default(USER)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  profile    Profile?
+
+  // Required opposite relation fields
+  matchesInitiated   Match[] @relation("MatchesUser1")
+  matchesReceived    Match[] @relation("MatchesUser2")
+
+  conversationsInitiated Conversation[] @relation("ConversationUser1")
+  conversationsReceived  Conversation[] @relation("ConversationUser2")
+
+  caregiverFor Profile[] @relation("CaregiverToUser")
+
+  @@index([email])
+  @@index([supabaseId])
+}
+
+model Match {
+  id        String   @id @default(uuid())
+
+  user1Id   String
+  user1     User     @relation("MatchesUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+  user2Id   String
+  user2     User     @relation("MatchesUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  isLiked   Boolean  @default(false)
+  isMutual  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([user1Id, user2Id])
+}
+
+model Conversation {
+  id       String    @id @default(uuid())
+
+  user1Id  String
+  user1    User      @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+  user2Id  String
+  user2    User      @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([user1Id, user2Id])
+}
+
+model Message {
+  id             String        @id @default(uuid())
+
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId       String
+  receiverId     String
+
+  content        String        @db.Text
+  createdAt      DateTime      @default(now())
+}
+
+model Profile {
+  id          String       @id @default(uuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic info
+  firstName   String
+  lastName    String
+  age         Int
+  gender      Gender
+  about       String?      @db.Text
+
+  // Location
+  city        String
+  state       String
+  country     String       @default("India")
+
+  // Disability info
+  disabilityType  String?   // simple & flexible
+  caregiverName   String?
+  caregiverPhone  String?
+  caregiverEmail  String?
+
+  // Interests
+  interests       String[]  // array of tags
+
+  // Preferences
+  lookingForGender Gender?
+  preferredCities  String[] // list of preferred locations
+
+  // Caregiver linking
+  caregiverId     String?   // refers to another User
+  caregiver       User?     @relation("CaregiverToUser", fields: [caregiverId], references: [id])
+
+  // Admin verification
+  status          ProfileStatus @default(PENDING)
+  isVerified      Boolean       @default(false)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
