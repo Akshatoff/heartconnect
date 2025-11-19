@@ -14,6 +14,7 @@ import {
   Lock,
   CheckCircle,
 } from "lucide-react";
+import Header from "@/components/Header";
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -94,108 +95,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="fixed top-0 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white z-50 shadow-lg">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center space-x-2 text-2xl font-bold"
-            >
-              <Heart className="w-8 h-8 fill-current" />
-              <span>HeartConnect</span>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link
-                href="#home"
-                className="hover:text-purple-200 transition-colors"
-              >
-                Home
-              </Link>
-              <Link
-                href="#features"
-                className="hover:text-purple-200 transition-colors"
-              >
-                Features
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="hover:text-purple-200 transition-colors"
-              >
-                How It Works
-              </Link>
-              <Link
-                href="#stories"
-                className="hover:text-purple-200 transition-colors"
-              >
-                Stories
-              </Link>
-              <Link
-                href="#contact"
-                className="hover:text-purple-200 transition-colors"
-              >
-                Contact
-              </Link>
-              <Link
-                href="signup"
-                className="hover:text-purple-200 transition-colors"
-              >
-                Sign Up Free
-              </Link>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2"
-            >
-              {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
-          </div>
-
-          {/* Mobile Navigation */}
-          {mobileMenuOpen && (
-            <div className="md:hidden pb-4 space-y-3">
-              <Link href="#home" className="block py-2 hover:text-purple-200">
-                Home
-              </Link>
-              <Link
-                href="#features"
-                className="block py-2 hover:text-purple-200"
-              >
-                Features
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="block py-2 hover:text-purple-200"
-              >
-                How It Works
-              </Link>
-              <Link
-                href="#stories"
-                className="block py-2 hover:text-purple-200"
-              >
-                Stories
-              </Link>
-              <Link
-                href="#contact"
-                className="block py-2 hover:text-purple-200"
-              >
-                Contact
-              </Link>
-              <button className="w-full bg-white text-purple-600 px-6 py-2 rounded-full font-semibold">
-                Sign Up Free
-              </button>
-            </div>
-          )}
-        </nav>
-      </header>
+      <Header></Header>
 
       {/* Hero Section */}
       <section

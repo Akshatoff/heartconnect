@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import Header from "@/components/Header";
+
 import {
   Heart,
   X,
@@ -203,33 +205,7 @@ export default function DiscoverPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/dashboard"
-                className="text-gray-600 hover:text-purple-600 transition-colors"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </Link>
-              <h1 className="text-xl font-bold text-gray-900">Discover</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setFilterOpen(!filterOpen)}
-                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors"
-              >
-                <Filter className="w-5 h-5" />
-                <span className="hidden sm:inline">Filters</span>
-              </button>
-              <div className="text-sm text-gray-600">
-                {currentIndex + 1} / {profiles.length}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header></Header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         {/* Profile Card */}

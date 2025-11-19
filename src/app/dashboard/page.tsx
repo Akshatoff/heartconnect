@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import Header from "@/components/Header";
+
 import {
   Heart,
   User,
@@ -127,73 +129,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center space-x-2 text-xl font-bold text-purple-600"
-            >
-              <Heart className="w-8 h-8 fill-current" />
-              <span className="hidden sm:block">HeartConnect</span>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
-              <button className="text-gray-600 hover:text-purple-600 transition-colors relative">
-                <Bell className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                  3
-                </span>
-              </button>
-              <Link
-                href="/dashboard"
-                className="text-gray-700 hover:text-purple-600 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/matches"
-                className="text-gray-700 hover:text-purple-600 transition-colors"
-              >
-                Matches
-              </Link>
-              <Link
-                href="/messages"
-                className="text-gray-700 hover:text-purple-600 transition-colors"
-              >
-                Messages
-              </Link>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-                  {profile?.firstName?.[0]}
-                  {profile?.lastName?.[0]}
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-600 hover:text-red-600 transition-colors"
-                  title="Logout"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-2 text-gray-600"
-            >
-              {sidebarOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header></Header>
 
       {/* Mobile Sidebar */}
       {sidebarOpen && (
