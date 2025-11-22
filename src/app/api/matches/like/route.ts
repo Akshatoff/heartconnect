@@ -1,3 +1,5 @@
+// src/app/api/matches/like/route.ts
+// Updated version that creates conversation on mutual match
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -39,11 +41,30 @@ export async function POST(request: Request) {
           data: { isMutual: true },
         });
 
+        // Create conversation for mutual match
+        const existingConversation = await prisma.conversation.findFirst({
+          where: {
+            OR: [
+              { user1Id: user.id, user2Id: targetUserId },
+              { user1Id: targetUserId, user2Id: user.id },
+            ],
+          },
+        });
+
+        if (!existingConversation) {
+          await prisma.conversation.create({
+            data: {
+              user1Id: user.id,
+              user2Id: targetUserId,
+            },
+          });
+        }
+
         return NextResponse.json({
           success: true,
           mutual: true,
           match: updatedMatch,
-          message: "It's a match! 🎉",
+          message: "It's a match! 🎉 You can now message each other.",
         });
       }
 

@@ -146,3 +146,79 @@ model Profile {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
+
+// prisma/schema.prisma
+// ADD THESE ENHANCEMENTS TO YOUR EXISTING SCHEMA
+
+// Enhanced Message model with read status
+model Message {
+  id             String        @id @default(uuid())
+
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId       String
+  receiverId     String
+
+  content        String        @db.Text
+
+  // NEW: Read status tracking
+  isRead         Boolean       @default(false)
+  readAt         DateTime?
+
+  // NEW: Message type (text, image, file, etc.)
+  messageType    MessageType   @default(TEXT)
+
+  // NEW: Optional attachment URL
+  attachmentUrl  String?
+
+  createdAt      DateTime      @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([receiverId, isRead])
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM  // For system messages like "X joined the conversation"
+}
+
+// Enhanced Conversation model
+model Conversation {
+  id       String    @id @default(uuid())
+
+  user1Id  String
+  user1    User      @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+  user2Id  String
+  user2    User      @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  // NEW: Last message timestamp for sorting
+  lastMessageAt DateTime @default(now())
+
+  // NEW: Typing indicator
+  user1Typing   Boolean  @default(false)
+  user2Typing   Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id, lastMessageAt])
+  @@index([user2Id, lastMessageAt])
+}
+
+// NEW: Message read receipts (optional, for detailed tracking)
+model MessageReadReceipt {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+}
