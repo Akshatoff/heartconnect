@@ -25,9 +25,6 @@ export const metadata: Metadata = {
     title: "HeartConnect",
     description: "Inclusive matrimony platform for people with special needs",
   },
-  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
-  themeColor: "#ef4444",
-  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -50,3 +47,4 @@ export default function RootLayout({
     </html>
   );
 }
+

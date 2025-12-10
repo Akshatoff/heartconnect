@@ -30,7 +30,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/signup"
-                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                className="px-6 py-2 bg-black text-white rounded-lg border-2 border-gray-600 outline-none hover:bg-transparent hover:text-black transition-colors font-medium"
               >
                 Get Started
               </Link>
@@ -54,7 +54,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/signup"
-                className="px-8 py-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold text-lg"
+                className="px-8 py-4 transition-all bg-black text-white rounded-lg border-2 border-gray-600 outline-none hover:bg-transparent hover:text-black transition-colors font-semibold text-lg"
               >
                 Create Free Profile
               </Link>
@@ -160,7 +160,7 @@ export default function Home() {
               },
             ].map((step) => (
               <div key={step.num} className="text-center">
-                <div className="bg-primary-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                <div className="bg-primary-600 text-black w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   {step.num}
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -176,16 +176,16 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-primary-600">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
+          <h2 className="text-4xl font-bold text-black mb-6">
             Ready to Find Your Connection?
           </h2>
-          <p className="text-xl text-primary-100 mb-8">
+          <p className="text-xl text-gray-900 mb-8">
             Join thousands of people who have found meaningful relationships on
             HeartConnect
           </p>
           <Link
             href="/signup"
-            className="inline-block px-8 py-4 bg-white text-primary-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg"
+            className="inline-block px-8 py-4 bg-gray-900 text-primary-600 border-2 border-gray-900 rounded-2xl rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors font-semibold text-lg"
           >
             Create Your Free Profile
           </Link>
