@@ -1,157 +1,172 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2, Save, Plus, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, Save, Plus, X } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Profile Edit Page
  * Allows users to create and update their profile
  */
 export default function ProfileEditPage() {
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
-    full_name: '',
-    gender: '',
-    date_of_birth: '',
-    location: '',
-    city: '',
-    state: '',
-    disability_type: '',
-    disability_description: '',
+    full_name: "",
+    gender: "",
+    date_of_birth: "",
+    location: "",
+    city: "",
+    state: "",
+    disability_type: "",
+    disability_description: "",
     interests: [] as string[],
-    about: '',
-    caregiver_name: '',
-    caregiver_contact: '',
-    caregiver_relationship: '',
+    about: "",
+    caregiver_name: "",
+    caregiver_contact: "",
+    caregiver_relationship: "",
     has_caregiver: false,
-  })
-  const [newInterest, setNewInterest] = useState('')
-  const router = useRouter()
-  const supabase = createClient()
+  });
+  const [newInterest, setNewInterest] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    fetchProfile()
-  }, [])
+    fetchProfile();
+  }, []);
 
   const fetchProfile = async () => {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
       if (data) {
         setProfile({
-          full_name: data.full_name || '',
-          gender: data.gender || '',
-          date_of_birth: data.date_of_birth || '',
-          location: data.location || '',
-          city: data.city || '',
-          state: data.state || '',
-          disability_type: data.disability_type || '',
-          disability_description: data.disability_description || '',
+          full_name: data.full_name || "",
+          gender: data.gender || "",
+          date_of_birth: data.date_of_birth || "",
+          location: data.location || "",
+          city: data.city || "",
+          state: data.state || "",
+          disability_type: data.disability_type || "",
+          disability_description: data.disability_description || "",
           interests: data.interests || [],
-          about: data.about || '',
-          caregiver_name: data.caregiver_name || '',
-          caregiver_contact: data.caregiver_contact || '',
-          caregiver_relationship: data.caregiver_relationship || '',
+          about: data.about || "",
+          caregiver_name: data.caregiver_name || "",
+          caregiver_contact: data.caregiver_contact || "",
+          caregiver_relationship: data.caregiver_relationship || "",
           has_caregiver: data.has_caregiver || false,
-        })
+        });
       }
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error("Error fetching profile:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault();
+    setSaving(true);
 
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           ...profile,
           location: `${profile.city}, ${profile.state}`,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id)
+        .eq("id", user.id);
 
-      if (error) throw error
+      if (error) throw error;
 
-      router.push('/profile')
+      router.push("/profile");
     } catch (error) {
-      console.error('Error saving profile:', error)
-      alert('Failed to save profile. Please try again.')
+      console.error("Error saving profile:", error);
+      alert("Failed to save profile. Please try again.");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const { name, value, type } = e.target;
     setProfile((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    }))
-  }
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
 
   const addInterest = () => {
     if (newInterest.trim() && !profile.interests.includes(newInterest.trim())) {
       setProfile((prev) => ({
         ...prev,
         interests: [...prev.interests, newInterest.trim()],
-      }))
-      setNewInterest('')
+      }));
+      setNewInterest("");
     }
-  }
+  };
 
   const removeInterest = (interest: string) => {
     setProfile((prev) => ({
       ...prev,
       interests: prev.interests.filter((i) => i !== interest),
-    }))
-  }
+    }));
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
-    )
+    );
   }
 
   return (
     <div className="py-8">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Your Profile</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          Edit Your Profile
+        </h1>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-md p-6 space-y-6"
+        >
           {/* Personal Information */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Personal Information
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="full_name"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Full Name *
                 </label>
                 <input
@@ -166,7 +181,10 @@ export default function ProfileEditPage() {
               </div>
 
               <div>
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="gender"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Gender *
                 </label>
                 <select
@@ -186,7 +204,10 @@ export default function ProfileEditPage() {
               </div>
 
               <div>
-                <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="date_of_birth"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Date of Birth *
                 </label>
                 <input
@@ -204,11 +225,16 @@ export default function ProfileEditPage() {
 
           {/* Location */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Location</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Location
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="city"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   City *
                 </label>
                 <input
@@ -223,7 +249,10 @@ export default function ProfileEditPage() {
               </div>
 
               <div>
-                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="state"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   State *
                 </label>
                 <input
@@ -247,7 +276,10 @@ export default function ProfileEditPage() {
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="disability_type" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="disability_type"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Disability Type
                 </label>
                 <input
@@ -262,7 +294,10 @@ export default function ProfileEditPage() {
               </div>
 
               <div>
-                <label htmlFor="disability_description" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="disability_description"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Description
                 </label>
                 <textarea
@@ -280,7 +315,9 @@ export default function ProfileEditPage() {
 
           {/* Interests */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Interests & Hobbies</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Interests & Hobbies
+            </h2>
 
             <div className="space-y-3">
               <div className="flex gap-2">
@@ -288,7 +325,9 @@ export default function ProfileEditPage() {
                   type="text"
                   value={newInterest}
                   onChange={(e) => setNewInterest(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addInterest())}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), addInterest())
+                  }
                   placeholder="Add an interest"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
@@ -327,10 +366,15 @@ export default function ProfileEditPage() {
 
           {/* About */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">About You</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              About You
+            </h2>
 
             <div>
-              <label htmlFor="about" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="about"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Tell us about yourself *
               </label>
               <textarea
@@ -351,7 +395,9 @@ export default function ProfileEditPage() {
 
           {/* Caregiver Information */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Caregiver Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Caregiver Information
+            </h2>
 
             <div className="space-y-4">
               <label className="flex items-center gap-2">
@@ -370,7 +416,10 @@ export default function ProfileEditPage() {
               {profile.has_caregiver && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
                   <div>
-                    <label htmlFor="caregiver_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="caregiver_name"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Caregiver Name
                     </label>
                     <input
@@ -384,7 +433,10 @@ export default function ProfileEditPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="caregiver_contact" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="caregiver_contact"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Caregiver Contact
                     </label>
                     <input
@@ -399,7 +451,10 @@ export default function ProfileEditPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label htmlFor="caregiver_relationship" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="caregiver_relationship"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Relationship
                     </label>
                     <input
@@ -432,24 +487,6 @@ export default function ProfileEditPage() {
               ) : (
                 <>
                   <Save className="w-5 h-5" />
-                  Save Profile
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/profile')}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-ame="w-5 h-5" />
                   Save Profile
                 </>
               )}
