@@ -115,21 +115,33 @@ export default function ChatWithUserPage({
       .eq("read", false);
   };
 
+  // Line 72 - Fix the subscription
   const subscribeToMessages = () => {
+    // Wait until we have the userId
+    if (!currentUserId) return { unsubscribe: () => {} };
+
     const channel = supabase
-      .channel(`chat:${params.userId}`)
+      .channel(`chat:${currentUserId}:${params.userId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${params.userId}),and(sender_id.eq.${params.userId},receiver_id.eq.${currentUserId}))`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-          if (payload.new.sender_id === params.userId) {
-            markMessagesAsRead(currentUserId);
+          const msg = payload.new as Message;
+          // Only add if it's part of this conversation
+          if (
+            (msg.sender_id === currentUserId &&
+              msg.receiver_id === params.userId) ||
+            (msg.sender_id === params.userId &&
+              msg.receiver_id === currentUserId)
+          ) {
+            setMessages((prev) => [...prev, msg]);
+            if (msg.sender_id === params.userId) {
+              markMessagesAsRead(currentUserId);
+            }
           }
         },
       )

@@ -195,7 +195,7 @@ export default function ViewProfilePage({
           .eq("to_user_id", user.id)
           .single();
 
-        if (reverseLike) {
+        if (reverselike) {
           setMatched(true);
           alert("🎉 It's a match! You can now chat with each other.");
         }
