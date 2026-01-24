@@ -54,7 +54,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/matches" className="flex items-center gap-2">
-            <Heart className="w-8 h-8 text-primary-600 fill-primary-600" />
+            <Heart className="w-8 h-8 text-black fill-primary-600" />
             <span className="text-xl font-bold text-gray-900 hidden sm:inline">
               HeartConnect
             </span>
@@ -66,8 +66,8 @@ export default function Header() {
               href="/matches"
               className={`text-sm font-medium transition-colors ${
                 pathname === "/matches"
-                  ? "text-primary-600"
-                  : "text-gray-700 hover:text-primary-600"
+                  ? "text-gray-900"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
               Matches
@@ -76,8 +76,8 @@ export default function Header() {
               href="/chat"
               className={`text-sm font-medium transition-colors ${
                 pathname?.startsWith("/chat")
-                  ? "text-primary-600"
-                  : "text-gray-700 hover:text-primary-600"
+                  ? "text-gray-900"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
               Messages
@@ -86,8 +86,8 @@ export default function Header() {
               href="/profile"
               className={`text-sm font-medium transition-colors ${
                 pathname?.startsWith("/profile")
-                  ? "text-primary-600"
-                  : "text-gray-700 hover:text-primary-600"
+                  ? "text-gray-900"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
               Profile

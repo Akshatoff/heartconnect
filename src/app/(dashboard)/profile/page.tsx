@@ -29,17 +29,33 @@ export default function ProfilePage() {
     try {
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
-      if (!user) return;
+      console.log("User:", user);
+      if (authError) {
+        throw new Error(`Authentication error: ${authError.message}`);
+      }
 
-      const { data, error } = await supabase
+      if (!user) {
+        throw new Error("No authenticated user found. Please log in.");
+      }
+
+      const { data, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
-        .single();
+        .eq("id", user.id);
 
-      if (error) throw error;
-      setProfile(data);
+      if (profileError) {
+        throw new Error(`Database error: ${profileError.message}`);
+      }
+
+      if (!data || data.length === 0) {
+        // No profile found, redirect to create profile
+        router.push("/profile/edit");
+        return;
+      }
+
+      setProfile(data[0]); // Assuming the first result
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
@@ -56,17 +72,8 @@ export default function ProfilePage() {
   }
 
   if (!profile) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">Profile not found</p>
-        <button
-          onClick={() => router.push("/profile/edit")}
-          className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-        >
-          Create Profile
-        </button>
-      </div>
-    );
+    router.push("/profile/edit");
+    return null;
   }
 
   const age = profile.date_of_birth

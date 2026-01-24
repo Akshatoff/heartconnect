@@ -64,7 +64,7 @@ export default function Sidebar() {
               />
               <div>
                 <div
-                  className={`font-medium text-sm ${isActive ? "text-primary-600" : "text-gray-900"}`}
+                  className={`font-medium text-sm ${isActive ? "text-gray-900" : "text-gray-900"}`}
                 >
                   {item.label}
                 </div>
@@ -79,20 +79,20 @@ export default function Sidebar() {
 
       {/* Quick Stats */}
       <div className="mt-4 p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg">
-        <h3 className="text-sm font-semibold text-primary-900 mb-2">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">
           Your Activity
         </h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-primary-700">Profile Views</span>
+            <span className="text-gray-700">Profile Views</span>
             <span className="font-semibold text-primary-900">24</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-primary-700">Matches</span>
+            <span className="text-gray-700">Matches</span>
             <span className="font-semibold text-primary-900">12</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-primary-700">Messages</span>
+            <span className="text-gray-700">Messages</span>
             <span className="font-semibold text-primary-900">8</span>
           </div>
         </div>

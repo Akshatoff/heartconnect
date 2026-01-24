@@ -84,19 +84,26 @@ export default function ProfileEditPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error("No authenticated user found.");
+        return;
+      }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          ...profile,
-          location: `${profile.city}, ${profile.state}`,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      console.log("User Id:", user.id);
 
-      if (error) throw error;
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        ...profile,
+        location: `${profile.city}, ${profile.state}`,
+        updated_at: new Date().toISOString(),
+      });
 
+      if (error) {
+        console.error("Upsert error:", error);
+        throw error;
+      }
+
+      console.log("Profile saved successfully. Redirecting to /profile.");
       router.push("/profile");
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -176,7 +183,7 @@ export default function ProfileEditPage() {
                   required
                   value={profile.full_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
 
@@ -193,7 +200,7 @@ export default function ProfileEditPage() {
                   required
                   value={profile.gender}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
@@ -217,7 +224,7 @@ export default function ProfileEditPage() {
                   required
                   value={profile.date_of_birth}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -244,7 +251,7 @@ export default function ProfileEditPage() {
                   required
                   value={profile.city}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
 
@@ -262,7 +269,7 @@ export default function ProfileEditPage() {
                   required
                   value={profile.state}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -289,7 +296,7 @@ export default function ProfileEditPage() {
                   value={profile.disability_type}
                   onChange={handleChange}
                   placeholder="e.g., Visual impairment, Hearing impairment"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
 
@@ -307,7 +314,7 @@ export default function ProfileEditPage() {
                   value={profile.disability_description}
                   onChange={handleChange}
                   placeholder="Share any details you'd like potential matches to know"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -325,16 +332,16 @@ export default function ProfileEditPage() {
                   type="text"
                   value={newInterest}
                   onChange={(e) => setNewInterest(e.target.value)}
-                  onKeyPress={(e) =>
+                  onKeyDown={(e) =>
                     e.key === "Enter" && (e.preventDefault(), addInterest())
                   }
                   placeholder="Add an interest"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="text-black flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 <button
                   type="button"
                   onClick={addInterest}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-primary-600 text-black rounded-lg hover:bg-primary-700 flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Add
@@ -346,7 +353,7 @@ export default function ProfileEditPage() {
                   {profile.interests.map((interest, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-primary-100 text-primary-800 rounded-full"
+                      className="text-black inline-flex items-center gap-2 px-3 py-1 bg-primary-100 text-primary-800 rounded-full"
                     >
                       {interest}
                       <button
@@ -385,7 +392,7 @@ export default function ProfileEditPage() {
                 value={profile.about}
                 onChange={handleChange}
                 placeholder="Share your story, what you're looking for, and what makes you unique..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               <p className="mt-1 text-sm text-gray-500">
                 {profile.about.length} characters (minimum 50 recommended)
@@ -428,7 +435,7 @@ export default function ProfileEditPage() {
                       type="text"
                       value={profile.caregiver_name}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
 
@@ -446,7 +453,7 @@ export default function ProfileEditPage() {
                       value={profile.caregiver_contact}
                       onChange={handleChange}
                       placeholder="Phone or email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
 
@@ -464,7 +471,7 @@ export default function ProfileEditPage() {
                       value={profile.caregiver_relationship}
                       onChange={handleChange}
                       placeholder="e.g., Parent, Sibling, Friend"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -477,7 +484,7 @@ export default function ProfileEditPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer text-black flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 rounded-lg hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
