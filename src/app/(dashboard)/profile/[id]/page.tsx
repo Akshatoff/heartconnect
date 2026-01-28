@@ -132,26 +132,16 @@ export default function ViewProfilePage({
 
   const recordProfileView = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || user.id === params.id) return;
+      if (!currentUserId || currentUserId === params.id) return;
 
-      await supabase.from("profile_views").insert({
-        viewer_id: user.id,
-        viewed_id: params.id,
-      });
-
-      // Create notification for profile owner
-      await supabase.rpc("create_notification", {
-        p_user_id: params.id,
-        p_type: "profile_view",
-        p_title: "Profile View",
-        p_content: "Someone viewed your profile",
-        p_related_user_id: user.id,
+      await fetch("/api/profile/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ viewed_id: params.id }),
       });
     } catch (error) {
       console.error("Error recording profile view:", error);
+      // Silently fail - don't disrupt user experience
     }
   };
 

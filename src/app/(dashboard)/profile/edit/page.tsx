@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Plus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-
+import { profileSchema } from "@/lib/validations/profile";
+import { ZodError } from "zod";
 /**
  * Profile Edit Page
  * Allows users to create and update their profile
@@ -12,6 +13,9 @@ import { createClient } from "@/lib/supabase/client";
 export default function ProfileEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   const [profile, setProfile] = useState({
     full_name: "",
     gender: "",
@@ -35,6 +39,61 @@ export default function ProfileEditPage() {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    const { validateImage, validateImageDimensions } =
+      await import("@/lib/utils/image-validation");
+
+    const validation = validateImage(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    const dimensionValidation = await validateImageDimensions(file);
+    if (!dimensionValidation.valid) {
+      alert(dimensionValidation.error);
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to server
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      alert("Avatar uploaded successfully!");
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      alert(error.message || "Failed to upload avatar");
+      setAvatarPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -81,9 +140,28 @@ export default function ProfileEditPage() {
     setSaving(true);
 
     try {
+      // ✅ Step 1: Validate profile data
+      const validatedData = profileSchema.parse({
+        full_name: profile.full_name,
+        gender: profile.gender,
+        date_of_birth: profile.date_of_birth,
+        city: profile.city,
+        state: profile.state,
+        about: profile.about,
+        interests: profile.interests,
+        disability_type: profile.disability_type,
+        disability_description: profile.disability_description,
+        has_caregiver: profile.has_caregiver,
+        caregiver_name: profile.caregiver_name,
+        caregiver_contact: profile.caregiver_contact,
+        caregiver_relationship: profile.caregiver_relationship,
+      });
+
+      // ✅ Step 2: Get authenticated user
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
       if (!user) {
         console.error("No authenticated user found.");
         return;
@@ -91,9 +169,10 @@ export default function ProfileEditPage() {
 
       console.log("User Id:", user.id);
 
+      // ✅ Step 3: Save profile
       const { error } = await supabase.from("profiles").upsert({
         id: user.id,
-        ...profile,
+        ...validatedData, // use validated data
         location: `${profile.city}, ${profile.state}`,
         updated_at: new Date().toISOString(),
       });
@@ -106,6 +185,14 @@ export default function ProfileEditPage() {
       console.log("Profile saved successfully. Redirecting to /profile.");
       router.push("/profile");
     } catch (error) {
+      // ✅ Zod validation errors
+      if (error instanceof ZodError) {
+        const firstError = error.errors[0];
+        alert(`Validation error: ${firstError.message}`);
+        return;
+      }
+
+      // ❌ Other errors (Supabase, auth, etc.)
       console.error("Error saving profile:", error);
       alert("Failed to save profile. Please try again.");
     } finally {
@@ -158,6 +245,51 @@ export default function ProfileEditPage() {
           Edit Your Profile
         </h1>
 
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Profile Picture
+          </h2>
+
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="w-32 h-32 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+                {avatarPreview || profile.avatar_url ? (
+                  <img
+                    src={avatarPreview || profile.avatar_url}
+                    alt="Avatar preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-16 h-16 text-primary-600" />
+                )}
+              </div>
+              {uploading && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="avatar" className="cursor-pointer">
+                <div className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors inline-block">
+                  {uploading ? "Uploading..." : "Upload Photo"}
+                </div>
+                <input
+                  id="avatar"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-sm text-gray-500 mt-2">
+                JPG, PNG, WebP or GIF. Max 5MB. Max 2000x2000px.
+              </p>
+            </div>
+          </div>
+        </section>
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-md p-6 space-y-6"

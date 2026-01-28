@@ -3,11 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, Loader2, Eye, EyeOff } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  User,
+  Loader2,
+  Eye,
+  EyeOff,
+  AlertCircle,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { signupSchema, type SignupInput } from "@/lib/validations/auth";
+import { ZodError } from "zod";
 
 export default function SignupPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignupInput>({
     email: "",
     password: "",
     confirmPassword: "",
@@ -15,69 +25,71 @@ export default function SignupPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [rateLimitError, setRateLimitError] = useState("");
   const router = useRouter();
   const supabase = createClient();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
-    // Validate password strength
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
-      setLoading(false);
-      return;
-    }
+    setErrors({});
+    setRateLimitError("");
 
     try {
-      // Sign up the user
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-          },
-        },
+      // Validate form data
+      const validatedData = signupSchema.parse(formData);
+
+      // Call API route with rate limiting
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validatedData),
       });
 
-      if (signUpError) throw signUpError;
+      const data = await response.json();
 
-      if (data.user) {
-        // Create profile entry
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: data.user.id,
-          email: formData.email,
-          full_name: formData.fullName,
-          is_approved: false,
-          is_verified: false,
-          is_active: true,
-        });
-
-        if (profileError) throw profileError;
-
-        // Redirect to profile edit page
-        router.push("/profile/edit");
+      if (response.status === 429) {
+        setRateLimitError(data.message);
+        return;
       }
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      setError(error.message || "Failed to create account");
+
+      if (!response.ok) {
+        setErrors({ general: data.error || "Failed to create account" });
+        return;
+      }
+
+      // Redirect to profile edit page
+      router.push("/profile/edit");
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      } else {
+        console.error("Signup error:", error);
+        setErrors({ general: "An unexpected error occurred" });
+      }
     } finally {
       setLoading(false);
     }
@@ -89,9 +101,21 @@ export default function SignupPage() {
         Create Your Account
       </h2>
 
-      {error && (
+      {rateLimitError && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-800">
+              Rate Limit Exceeded
+            </p>
+            <p className="text-sm text-yellow-700 mt-1">{rateLimitError}</p>
+          </div>
+        </div>
+      )}
+
+      {errors.general && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
+          {errors.general}
         </div>
       )}
 
@@ -113,11 +137,20 @@ export default function SignupPage() {
               required
               value={formData.fullName}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className={`w-full pl-10 pr-4 py-3 border ${
+                errors.fullName ? "border-red-300" : "border-gray-300"
+              } text-black rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
               placeholder="John Doe"
               aria-label="Full name"
+              aria-invalid={!!errors.fullName}
+              aria-describedby={errors.fullName ? "fullName-error" : undefined}
             />
           </div>
+          {errors.fullName && (
+            <p id="fullName-error" className="mt-1 text-sm text-red-600">
+              {errors.fullName}
+            </p>
+          )}
         </div>
 
         {/* Email */}
@@ -137,11 +170,20 @@ export default function SignupPage() {
               required
               value={formData.email}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className={`w-full pl-10 pr-4 py-3 border ${
+                errors.email ? "border-red-300" : "border-gray-300"
+              } text-black rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
               placeholder="your@email.com"
               aria-label="Email address"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
             />
           </div>
+          {errors.email && (
+            <p id="email-error" className="mt-1 text-sm text-red-600">
+              {errors.email}
+            </p>
+          )}
         </div>
 
         {/* Password */}
@@ -161,9 +203,17 @@ export default function SignupPage() {
               required
               value={formData.password}
               onChange={handleChange}
-              className="w-full pl-10 pr-12 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="At least 8 characters"
+              className={`w-full pl-10 pr-12 py-3 border ${
+                errors.password ? "border-red-300" : "border-gray-300"
+              } text-black rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+              placeholder="Min 12 characters"
               aria-label="Password"
+              aria-invalid={!!errors.password}
+              aria-describedby={
+                errors.password
+                  ? "password-error password-requirements"
+                  : "password-requirements"
+              }
             />
             <button
               type="button"
@@ -178,6 +228,24 @@ export default function SignupPage() {
               )}
             </button>
           </div>
+          <div
+            id="password-requirements"
+            className="mt-2 text-xs text-gray-600"
+          >
+            <p>Password must contain:</p>
+            <ul className="list-disc list-inside ml-2 mt-1">
+              <li>At least 12 characters</li>
+              <li>One uppercase letter</li>
+              <li>One lowercase letter</li>
+              <li>One number</li>
+              <li>One special character (@$!%*?&)</li>
+            </ul>
+          </div>
+          {errors.password && (
+            <p id="password-error" className="mt-1 text-sm text-red-600">
+              {errors.password}
+            </p>
+          )}
         </div>
 
         {/* Confirm Password */}
@@ -197,18 +265,29 @@ export default function SignupPage() {
               required
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className={`w-full pl-10 pr-4 py-3 border ${
+                errors.confirmPassword ? "border-red-300" : "border-gray-300"
+              } text-black rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
               placeholder="Re-enter your password"
               aria-label="Confirm password"
+              aria-invalid={!!errors.confirmPassword}
+              aria-describedby={
+                errors.confirmPassword ? "confirmPassword-error" : undefined
+              }
             />
           </div>
+          {errors.confirmPassword && (
+            <p id="confirmPassword-error" className="mt-1 text-sm text-red-600">
+              {errors.confirmPassword}
+            </p>
+          )}
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex cursor-pointer items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex cursor-pointer items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>

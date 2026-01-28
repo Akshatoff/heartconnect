@@ -74,22 +74,37 @@ export default function MatchesPage() {
     }
   };
 
+  // Replace handleLike function:
+
   const handleLike = async (matchId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase.from("likes").insert({
-        from_user_id: user.id,
-        to_user_id: matchId,
+      const response = await fetch("/api/likes/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to_user_id: matchId }),
       });
+
+      const data = await response.json();
+
+      if (response.status === 429) {
+        alert(`Rate limit exceeded: ${data.message}`);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to like profile");
+      }
 
       // Remove from current matches
       setMatches((prev) => prev.filter((m) => m.id !== matchId));
+
+      // Show match notification if it's a match
+      if (data.matchCreated) {
+        alert("🎉 It's a match! You can now chat with each other.");
+      }
     } catch (error) {
       console.error("Error liking profile:", error);
+      alert("Failed to like profile. Please try again.");
     }
   };
 

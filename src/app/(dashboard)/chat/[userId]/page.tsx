@@ -150,30 +150,39 @@ export default function ChatWithUserPage({
     return channel;
   };
 
+  // Replace handleSendMessage function with:
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase.from("messages").insert({
-        sender_id: user.id,
-        receiver_id: params.userId,
-        content: newMessage.trim(),
-        message_type: "text",
-        read: false,
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiver_id: params.userId,
+          content: newMessage.trim(),
+          message_type: "text",
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (response.status === 429) {
+        alert(`Rate limit exceeded: ${data.message}`);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("Failed to send message");
+      alert("Failed to send message. Please try again.");
     } finally {
       setSending(false);
     }
