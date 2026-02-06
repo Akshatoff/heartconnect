@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Plus, X } from "lucide-react";
+import { Loader2, Save, Plus, X, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { profileSchema } from "@/lib/validations/profile";
 import { ZodError } from "zod";
@@ -37,8 +37,75 @@ export default function ProfileEditPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    let isMounted = true; // Flag to track if the component is mounted
+
+    const fetchProfileData = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          console.log("No authenticated user found.");
+          if (isMounted) {
+            setLoading(false); // Ensure loading is false if no user
+          }
+          return;
+        }
+
+        console.log("User Id:", user.id);
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          // Log the specific Supabase error before throwing
+          console.error("Supabase error during profile fetch:", error);
+          throw error; // Throw the actual Supabase error
+        }
+
+        if (data && isMounted) { // Check if mounted before updating state
+          setProfile({
+            full_name: data.full_name || "",
+            gender: data.gender || "",
+            date_of_birth: data.date_of_birth || "",
+            location: data.location || "",
+            city: data.city || "",
+            state: data.state || "",
+            disability_type: data.disability_type || "",
+            disability_description: data.disability_description || "",
+            interests: data.interests || [],
+            about: data.about || "",
+            caregiver_name: data.caregiver_name || "",
+            caregiver_contact: data.caregiver_contact || "",
+            caregiver_relationship: data.caregiver_relationship || "",
+            has_caregiver: data.has_caregiver || false,
+          });
+        }
+      } catch (error: any) { // Use 'any' for better type checking of error object
+        // This catch block will now receive the thrown error
+        console.error("Error fetching profile:", error); // Log the received error
+        if (isMounted) {
+          // Optionally set an error state for UI feedback
+          // setErrorState("Failed to load profile. Please try again.");
+        }
+      } finally {
+        if (isMounted) { // Check if mounted before updating state
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProfileData();
+
+    // Cleanup function to set isMounted to false when the component unmounts
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array ensures this effect runs only once on mount
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,16 +146,31 @@ export default function ProfileEditPage() {
         body: formData,
       });
 
-      const data = await response.json();
+      let errorData: any = {};
+      let responseText = '';
+
+      try {
+        responseText = await response.text(); // Read response as text first
+        if (responseText) {
+          errorData = JSON.parse(responseText);
+        }
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError);
+        // Use raw text if JSON parsing fails
+        errorData.error = responseText || "Could not parse server response";
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "Upload failed");
+        // If the response is not OK, throw an error with more details
+        const errorMessage = errorData.error || errorData.message || responseText || "Upload failed";
+        throw new Error(`Upload failed: ${response.status} - ${errorMessage}`);
       }
 
       alert("Avatar uploaded successfully!");
-    } catch (error: any) {
+    } catch (error: any) { // Explicitly type error as any for broader compatibility
       console.error("Upload error:", error);
-      alert(error.message || "Failed to upload avatar");
+      // Ensure error message is displayed, fallback to generic if error object is unusual
+      alert(error.message || "Failed to upload avatar. Please check console for details.");
       setAvatarPreview(null);
     } finally {
       setUploading(false);
@@ -187,8 +269,15 @@ export default function ProfileEditPage() {
     } catch (error) {
       // ✅ Zod validation errors
       if (error instanceof ZodError) {
-        const firstError = error.errors[0];
-        alert(`Validation error: ${firstError.message}`);
+        // Check if error.errors exists and is an array before accessing it
+        if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
+          const firstError = error.errors[0];
+          alert(`Validation error: ${firstError.message}`);
+        } else {
+          // Handle cases where ZodError might not have structured errors
+          alert("A validation error occurred, but details could not be retrieved.");
+          console.error("Malformed ZodError encountered:", error);
+        }
         return;
       }
 

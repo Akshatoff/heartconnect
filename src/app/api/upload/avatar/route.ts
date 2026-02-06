@@ -41,14 +41,15 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const fileName = generateUniqueFileName(file.name, user.id);
-    const filePath = `avatars/${fileName}`;
+    const filePath = `${user.id}/${fileName}`;
+
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(filePath, file, {
         cacheControl: "3600",
-        upsert: false,
+        upsert: true,
         contentType: file.type,
       });
 
@@ -60,15 +61,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-    // Update user profile with new avatar URL
+        // Update user profile with new avatar URL
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ avatar_url: publicUrl })
+      .update({ avatar_path: filePath })
       .eq("id", user.id);
 
     if (updateError) {
