@@ -1,5 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
+export const GENDER_OPTIONS = [
+  "male",
+  "female",
+  "other",
+  "prefer_not_to_say",
+] as const;
 export const profileSchema = z.object({
   full_name: z
     .string()
@@ -7,18 +13,16 @@ export const profileSchema = z.object({
     .max(100, "Name is too long")
     .regex(/^[a-zA-Z\s'-]+$/, "Invalid name format"),
 
-  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say'], {
-    required_error: "Please select a gender",
-  }),
+  // src/lib/validations/profile.ts
 
-  date_of_birth: z
-    .string()
-    .refine((date) => {
-      const birthDate = new Date(date);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      return age >= 18 && age <= 120;
-    }, "You must be at least 18 years old"),
+  gender: z.enum(GENDER_OPTIONS, "Please select a gender"),
+
+  date_of_birth: z.string().refine((date) => {
+    const birthDate = new Date(date);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    return age >= 18 && age <= 120;
+  }, "You must be at least 18 years old"),
 
   city: z
     .string()

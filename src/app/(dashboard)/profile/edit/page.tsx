@@ -228,9 +228,9 @@ export default function ProfileEditPage() {
       router.push("/profile");
     } catch (error) {
       if (error instanceof ZodError) {
-        const firstError = error.errors[0];
+        const firstError = error.issues[0];
         alert(`Validation error: ${firstError.message}`);
-        console.error("Validation errors:", error.errors);
+        console.error("Validation errors:", error.issues);
         return;
       }
 
@@ -238,7 +238,7 @@ export default function ProfileEditPage() {
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to save profile. Please try again."
+          : "Failed to save profile. Please try again.",
       );
     } finally {
       setSaving(false);
@@ -248,7 +248,7 @@ export default function ProfileEditPage() {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
     setProfile((prev) => ({

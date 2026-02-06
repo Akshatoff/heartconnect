@@ -8,9 +8,11 @@ export async function withRateLimit(
 ): Promise<NextResponse> {
   // Get identifier (IP address or user ID)
   const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0] : request.ip || "anonymous";
+  const ip = forwarded
+    ? forwarded.split(",")[0]
+    : (request as any).ip || "anonymous";
 
-  const { success, remaining, reset } = await limiter.limit(ip);
+  const { success, limit, remaining, reset } = await limiter.limit(ip);
 
   if (!success) {
     return NextResponse.json(
@@ -22,7 +24,7 @@ export async function withRateLimit(
       {
         status: 429,
         headers: {
-          "X-RateLimit-Limit": limiter.limiter.toString(),
+          "X-RateLimit-Limit": limit.toString(),
           "X-RateLimit-Remaining": remaining.toString(),
           "X-RateLimit-Reset": new Date(reset).toISOString(),
           "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString(),

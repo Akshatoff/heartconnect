@@ -51,7 +51,7 @@ export default function ChatWithUserPage({
     initializeChat();
     const channel = subscribeToMessages();
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
   }, [params.userId]);
 

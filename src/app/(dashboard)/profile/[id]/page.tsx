@@ -57,6 +57,7 @@ export default function ViewProfilePage({
   );
   const [showReportModal, setShowReportModal] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -65,6 +66,19 @@ export default function ViewProfilePage({
     checkLikeStatus();
     recordProfileView();
   }, [params.id]);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+
+    checkUser();
+  }, [supabase]);
 
   const fetchProfile = async () => {
     try {

@@ -1,4 +1,3 @@
-src / lib / utils / matching.tsx;
 interface Profile {
   id: string;
   interests: string[];
