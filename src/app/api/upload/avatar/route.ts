@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
     const fileName = generateUniqueFileName(file.name, user.id);
     const filePath = `${user.id}/${fileName}`;
 
-
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from("avatars")
@@ -61,10 +60,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-        // Update user profile with new avatar URL
+    // Get public URL for the uploaded image
+    const { data: urlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData.publicUrl;
+
+    // Update user profile with new avatar URL
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ avatar_path: filePath })
+      .update({ avatar_url: publicUrl })
       .eq("id", user.id);
 
     if (updateError) {

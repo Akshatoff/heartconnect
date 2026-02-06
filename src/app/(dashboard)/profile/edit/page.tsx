@@ -6,15 +6,13 @@ import { Loader2, Save, Plus, X, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { profileSchema } from "@/lib/validations/profile";
 import { ZodError } from "zod";
-/**
- * Profile Edit Page
- * Allows users to create and update their profile
- */
+
 export default function ProfileEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const [profile, setProfile] = useState({
     full_name: "",
@@ -37,75 +35,64 @@ export default function ProfileEditPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    let isMounted = true; // Flag to track if the component is mounted
+    fetchProfile();
+  }, []);
 
-    const fetchProfileData = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+  const fetchProfile = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (!user) {
-          console.log("No authenticated user found.");
-          if (isMounted) {
-            setLoading(false); // Ensure loading is false if no user
-          }
-          return;
-        }
+      if (!user) {
+        console.log("No authenticated user found.");
+        setLoading(false);
+        return;
+      }
 
-        console.log("User Id:", user.id);
+      console.log("User Id:", user.id);
+      setCurrentUserId(user.id);
 
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-        if (error) {
-          // Log the specific Supabase error before throwing
-          console.error("Supabase error during profile fetch:", error);
-          throw error; // Throw the actual Supabase error
-        }
+      if (error) {
+        console.error("Supabase error during profile fetch:", error);
+        throw error;
+      }
 
-        if (data && isMounted) { // Check if mounted before updating state
-          setProfile({
-            full_name: data.full_name || "",
-            gender: data.gender || "",
-            date_of_birth: data.date_of_birth || "",
-            location: data.location || "",
-            city: data.city || "",
-            state: data.state || "",
-            disability_type: data.disability_type || "",
-            disability_description: data.disability_description || "",
-            interests: data.interests || [],
-            about: data.about || "",
-            caregiver_name: data.caregiver_name || "",
-            caregiver_contact: data.caregiver_contact || "",
-            caregiver_relationship: data.caregiver_relationship || "",
-            has_caregiver: data.has_caregiver || false,
-          });
-        }
-      } catch (error: any) { // Use 'any' for better type checking of error object
-        // This catch block will now receive the thrown error
-        console.error("Error fetching profile:", error); // Log the received error
-        if (isMounted) {
-          // Optionally set an error state for UI feedback
-          // setErrorState("Failed to load profile. Please try again.");
-        }
-      } finally {
-        if (isMounted) { // Check if mounted before updating state
-          setLoading(false);
+      if (data) {
+        setProfile({
+          full_name: data.full_name || "",
+          gender: data.gender || "",
+          date_of_birth: data.date_of_birth || "",
+          location: data.location || "",
+          city: data.city || "",
+          state: data.state || "",
+          disability_type: data.disability_type || "",
+          disability_description: data.disability_description || "",
+          interests: data.interests || [],
+          about: data.about || "",
+          caregiver_name: data.caregiver_name || "",
+          caregiver_contact: data.caregiver_contact || "",
+          caregiver_relationship: data.caregiver_relationship || "",
+          has_caregiver: data.has_caregiver || false,
+        });
+
+        // Set avatar preview if exists
+        if (data.avatar_url) {
+          setAvatarPreview(data.avatar_url);
         }
       }
-    };
-
-    fetchProfileData();
-
-    // Cleanup function to set isMounted to false when the component unmounts
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array ensures this effect runs only once on mount
+    } catch (error: any) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,74 +133,19 @@ export default function ProfileEditPage() {
         body: formData,
       });
 
-      let errorData: any = {};
-      let responseText = '';
-
-      try {
-        responseText = await response.text(); // Read response as text first
-        if (responseText) {
-          errorData = JSON.parse(responseText);
-        }
-      } catch (parseError) {
-        console.error("Failed to parse response as JSON:", parseError);
-        // Use raw text if JSON parsing fails
-        errorData.error = responseText || "Could not parse server response";
-      }
+      const data = await response.json();
 
       if (!response.ok) {
-        // If the response is not OK, throw an error with more details
-        const errorMessage = errorData.error || errorData.message || responseText || "Upload failed";
-        throw new Error(`Upload failed: ${response.status} - ${errorMessage}`);
+        throw new Error(data.error || "Upload failed");
       }
 
       alert("Avatar uploaded successfully!");
-    } catch (error: any) { // Explicitly type error as any for broader compatibility
+    } catch (error: any) {
       console.error("Upload error:", error);
-      // Ensure error message is displayed, fallback to generic if error object is unusual
-      alert(error.message || "Failed to upload avatar. Please check console for details.");
+      alert(error.message || "Failed to upload avatar");
       setAvatarPreview(null);
     } finally {
       setUploading(false);
-    }
-  };
-
-  const fetchProfile = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setProfile({
-          full_name: data.full_name || "",
-          gender: data.gender || "",
-          date_of_birth: data.date_of_birth || "",
-          location: data.location || "",
-          city: data.city || "",
-          state: data.state || "",
-          disability_type: data.disability_type || "",
-          disability_description: data.disability_description || "",
-          interests: data.interests || [],
-          about: data.about || "",
-          caregiver_name: data.caregiver_name || "",
-          caregiver_contact: data.caregiver_contact || "",
-          caregiver_relationship: data.caregiver_relationship || "",
-          has_caregiver: data.has_caregiver || false,
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -222,7 +154,7 @@ export default function ProfileEditPage() {
     setSaving(true);
 
     try {
-      // ✅ Step 1: Validate profile data
+      // Validate profile data
       const validatedData = profileSchema.parse({
         full_name: profile.full_name,
         gender: profile.gender,
@@ -239,51 +171,75 @@ export default function ProfileEditPage() {
         caregiver_relationship: profile.caregiver_relationship,
       });
 
-      // ✅ Step 2: Get authenticated user
+      console.log("✅ Validation passed:", validatedData);
+
+      // Get authenticated user
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
-        console.error("No authenticated user found.");
-        return;
+        throw new Error("No authenticated user found");
       }
 
-      console.log("User Id:", user.id);
+      console.log("📝 Saving profile for user:", user.id);
 
-      // ✅ Step 3: Save profile
-      const { error } = await supabase.from("profiles").upsert({
+      // Prepare data for upsert
+      const profileData = {
         id: user.id,
-        ...validatedData, // use validated data
-        location: `${profile.city}, ${profile.state}`,
+        email: user.email,
+        full_name: validatedData.full_name,
+        gender: validatedData.gender,
+        date_of_birth: validatedData.date_of_birth,
+        city: validatedData.city,
+        state: validatedData.state,
+        location: `${validatedData.city}, ${validatedData.state}`,
+        about: validatedData.about,
+        interests: validatedData.interests,
+        disability_type: validatedData.disability_type || null,
+        disability_description: validatedData.disability_description || null,
+        has_caregiver: validatedData.has_caregiver,
+        caregiver_name: validatedData.caregiver_name || null,
+        caregiver_contact: validatedData.caregiver_contact || null,
+        caregiver_relationship: validatedData.caregiver_relationship || null,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      console.log("📦 Profile data to save:", profileData);
+
+      // Save profile
+      const { data: savedData, error } = await supabase
+        .from("profiles")
+        .upsert(profileData)
+        .select();
 
       if (error) {
-        console.error("Upsert error:", error);
-        throw error;
+        console.error("❌ Upsert error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw new Error(error.message || "Failed to save profile");
       }
 
-      console.log("Profile saved successfully. Redirecting to /profile.");
+      console.log("✅ Profile saved successfully:", savedData);
+      alert("Profile saved successfully!");
       router.push("/profile");
     } catch (error) {
-      // ✅ Zod validation errors
       if (error instanceof ZodError) {
-        // Check if error.errors exists and is an array before accessing it
-        if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
-          const firstError = error.errors[0];
-          alert(`Validation error: ${firstError.message}`);
-        } else {
-          // Handle cases where ZodError might not have structured errors
-          alert("A validation error occurred, but details could not be retrieved.");
-          console.error("Malformed ZodError encountered:", error);
-        }
+        const firstError = error.errors[0];
+        alert(`Validation error: ${firstError.message}`);
+        console.error("Validation errors:", error.errors);
         return;
       }
 
-      // ❌ Other errors (Supabase, auth, etc.)
-      console.error("Error saving profile:", error);
-      alert("Failed to save profile. Please try again.");
+      console.error("❌ Error saving profile:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to save profile. Please try again."
+      );
     } finally {
       setSaving(false);
     }
@@ -292,7 +248,7 @@ export default function ProfileEditPage() {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value, type } = e.target;
     setProfile((prev) => ({
@@ -334,7 +290,7 @@ export default function ProfileEditPage() {
           Edit Your Profile
         </h1>
 
-        <section>
+        <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Profile Picture
           </h2>
@@ -342,9 +298,9 @@ export default function ProfileEditPage() {
           <div className="flex items-center gap-6">
             <div className="relative">
               <div className="w-32 h-32 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
-                {avatarPreview || profile.avatar_url ? (
+                {avatarPreview ? (
                   <img
-                    src={avatarPreview || profile.avatar_url}
+                    src={avatarPreview}
                     alt="Avatar preview"
                     className="w-full h-full object-cover"
                   />
@@ -379,6 +335,7 @@ export default function ProfileEditPage() {
             </div>
           </div>
         </section>
+
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-md p-6 space-y-6"
@@ -562,7 +519,7 @@ export default function ProfileEditPage() {
                 <button
                   type="button"
                   onClick={addInterest}
-                  className="px-4 py-2 bg-primary-600 text-black rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Add
@@ -705,7 +662,7 @@ export default function ProfileEditPage() {
             <button
               type="submit"
               disabled={saving}
-              className="cursor-pointer text-black flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 rounded-lg hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer text-white flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-black rounded-lg hover:bg-gray-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
